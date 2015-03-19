@@ -48,7 +48,7 @@ By default, it will output a colored table:
 
 ![Example output](http://i.imgur.com/IM6xd.png"Example output")
 
-Note that the wiki tag name defaults to "bugzilla" but is 
+Note that the wiki tag name defaults to "hgm" but is 
 configurable by the administrator.
 
 Examples

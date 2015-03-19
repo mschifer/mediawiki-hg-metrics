@@ -178,7 +178,8 @@ $wgHGMSQL         = "SELECT metrics_files.file_name, " .
                                 " metrics_changes.total_lines, " .
                                 " metrics_changes.percent_change, " .
                                 " metrics_files.mean, " .
-                                " metrics_files.stdev " .
+                                " metrics_files.stdev, " .
+                                " metrics_changes.bug  " .
                          " FROM   metrics_files, " .
                                 " metrics_changes, " .
                                 " metrics_releases " .
@@ -205,16 +206,13 @@ $wgHGMFontStorage = $cwd . '/pchart/fonts'; // Path to font directory for font d
 $wgHGMChartUrl = $wgScriptPath . '/extensions/HGM/charts'; // The URL to use to display charts
 // The default fields to display
 
-#$wgHGMDefaultFields = array(
-#    'release_id',
-#    'release_name'
-#);
 $wgHGMDefaultFields = array(
     'release_name',
     'file_name',
     'percent_change',
     'mean',
-    'stdev'
+    'stdev',
+    'bug'
 );
 
 

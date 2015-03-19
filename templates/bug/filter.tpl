@@ -30,23 +30,20 @@
         <?php
             $base = dirname(__FILE__) . '/../../templates/fields/';
 
-            $all = count($response->bugs);
-            $resolved = 0;
-            $verified = 0;
             $filter_op    = $this->config['filter_op'];
 
-            foreach( $response->bugs as $bug ) { 
+            foreach( $response->files as $row ) { 
                 $matches = 0;
                 // If the filter field is an array filter on number of enteries
                 // otherwise do a direct compare
 
-                if (is_array($bug[$this->config['filter_on']] )) {
+                if (is_array($row[$this->config['filter_on']] )) {
                     $filter_value = intval($this->config['filter_value']);
-                    $field_value  = count($bug[$this->config['filter_on']]);
+                    $field_value  = count($row[$this->config['filter_on']]);
  
                 } else {
                     $filter_value = $this->config['filter_value'];
-                    $field_value  = $bug[$this->config['filter_on']];
+                    $field_value  = $row[$this->config['filter_on']];
 
                 }
 
@@ -77,22 +74,13 @@
                     continue;
                 }
 
-
-                if($bug['status'] == 'RESOLVED') {
-                    $resolved++;
-                }
-                if($bug['status'] == 'VERIFIED') {
-                    $verified++;
-                }
-
-                echo "<tr class='hgm-status-${bug['status']}'>";
-                foreach( $response->fields as $field ) {
+                foreach( $response->fields as $field_name ) {
                     echo "<td class='hgm-data-$field'>";
 
                     // Get our template path
                     $subtemplate = $base .
                         escapeshellcmd(
-                            str_replace('..', 'DOTS', $field)
+                            str_replace('..', 'DOTS', $field_name)
                         ) . '.tpl';
 
                     // Make sure a template is there
@@ -101,7 +89,7 @@
                     }
 
                     // Print out the data
-                    $data = $bug[$field];
+                    $data = $row[$field_name];
                     require($subtemplate);
 
                     echo "</td>\n";
@@ -112,9 +100,3 @@
     </tbody>
 </table>
 
-<strong>
-<?php echo $all ?> Total;
-<?php echo $all-$resolved-$verified ?> Open (<?php if ($all != 0) echo 100*(round(($all-$resolved-$verified)/$all, 4)); else echo 0 ?>%);
-<?php echo $resolved ?> Resolved (<?php if ($all != 0) echo 100*(round(($resolved)/$all, 4)); else echo 0 ?>%);
-<?php echo $verified ?> Verified (<?php if ($all != 0) echo 100*(round(($verified)/$all, 4)); else echo 0 ?>%);
-</strong>

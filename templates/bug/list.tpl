@@ -2,20 +2,20 @@
     <?php
         $base = dirname(__FILE__) . '/../../templates/fields/';
 
-        foreach( $response->bugs as $bug ) {
-            echo "<li class='hgm-status-${bug['status']}'>";
+        foreach( $response->files as $row ) {
+            echo "<li class='hgm-status-${row['status']}'>";
             $count = 0;
-            foreach( $response->fields as $field ) {
+            foreach( $response->fields as $field_name ) {
                 if( $count ) {
                     echo " - ";
                 }
-                echo "<span class='hgm-data-$field'>";
+                echo "<span class='hgm-data-$field_name'>";
 
                 // Get our template path
                 $subtemplate = $base . 
                     escapeshellcmd(str_replace('..',
                         'DOTS',
-                        $field
+                        $field_name
                     )
                 ) . '.tpl';
 
@@ -25,7 +25,7 @@
                 }
 
                 // Print out the data
-                $data = $bug[$field];
+                $data = $row[$field_name];
                 require($subtemplate);
 
                 echo "</span>";
