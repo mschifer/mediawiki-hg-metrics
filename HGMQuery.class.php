@@ -211,4 +211,5 @@ class HGMSQLQuery extends HGMBaseQuery {
         $stmt->execute();
         $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC) ;
         return;
+    }
 }

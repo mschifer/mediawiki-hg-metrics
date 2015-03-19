@@ -23,7 +23,6 @@ class HGMCacheSql implements HGMCacheI
         $now     = time(); // Using time() because it's a PHP built-in.
         $expires = $now + $ttl;
         if (null === $this->get($key)) {
-            echo "Doing INSERT";
             $res = "";
             try {
             $res = $master->insert(
@@ -51,7 +50,6 @@ class HGMCacheSql implements HGMCacheI
     public function get($key)
     {
         $slave = $this->_getDatabase(DB_SLAVE);
-        echo "GETTING DATA FROM CACHE";
         $res   = $slave->select(
             'hgm_cache',
             array( 'id', 'data', 'expires' ),
