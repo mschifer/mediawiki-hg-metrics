@@ -33,7 +33,6 @@
             echo "<tr>";
             foreach ( $response->files as $row) {
               foreach ( $response->fields as $field_name ) {
-              #foreach ( $row as $field) {
                     echo "<td class='hgm-data-$field'>";
 
                     // Get our template path

@@ -172,22 +172,32 @@ function HGMRender($input, array $args, Parser $parser, $frame=null ) {
 
 $wgHGMTagName     = 'hgm'; // The tag name for your HGM installation (default: 'hgm')
 $wgHGMSQL         = "";
-$wgHGMSQL         = "SELECT metrics_files.file_name, " .
-                                " metrics_releases.release_name, " .
-                                " metrics_changes.delta, " .
-                                " metrics_changes.total_lines, " .
-                                " metrics_changes.percent_change, " .
-                                " metrics_files.mean, " .
-                                " metrics_files.stdev, " .
-                                " metrics_changes.bug  " .
-                         " FROM   metrics_files, " .
-                                " metrics_changes, " .
-                                " metrics_releases " .
-                         " WHERE  metrics_changes.file_id = metrics_files.file_id " .
-                         "   AND  metrics_releases.release_id = metrics_changes.release_id " .
-                         "   AND  metrics_releases.release_name like :release_name " .
-                         "   AND  metrics_changes.percent_change > (metrics_files.mean + metrics_files.stdev + :min_change ) " .
-                         " ORDER BY metrics_changes.release_id,metrics_changes.percent_change DESC; " ;
+$wgHGMSQL         = "SELECT metrics_files.file_name,metrics_files.file_id, metrics_files.mean, metrics_files.stdev, " .
+                           "metrics_summary.percent_change, metrics_releases.release_name, metrics_summary.bugs " .
+                      "FROM metrics_files, metrics_summary, metrics_releases " .
+                     "WHERE metrics_releases.release_id = metrics_summary.release_id "  .
+                       "AND metrics_files.file_id = metrics_summary.file_id " .
+                       "AND metrics_summary.percent_change > (metrics_files.mean + metrics_files.stdev + :min_change) " .
+                       "AND metrics_releases.release_name LIKE :release_name " .
+                       "AND metrics_releases.release_name LIKE :release_name " .
+                  "ORDER BY metrics_summary.release_id,metrics_summary.percent_change DESC; " ;
+
+#$wgHGMSQL         = "SELECT metrics_files.file_name, " .
+#                                " metrics_releases.release_name, " .
+#                                " metrics_changes.delta, " .
+#                                " metrics_changes.total_lines, " .
+#                                " metrics_changes.percent_change, " .
+#                                " metrics_files.mean, " .
+#                                " metrics_files.stdev, " .
+#                                " metrics_changes.bug  " .
+#                         " FROM   metrics_files, " .
+#                                " metrics_changes, " .
+#                                " metrics_releases " .
+#                         " WHERE  metrics_changes.file_id = metrics_files.file_id " .
+#                         "   AND  metrics_releases.release_id = metrics_changes.release_id " .
+#                         "   AND  metrics_releases.release_name like :release_name " .
+#                         "   AND  metrics_changes.percent_change > (metrics_files.mean + metrics_files.stdev + :min_change ) " .
+#                         " ORDER BY metrics_changes.release_id,metrics_changes.percent_change DESC; " ;
 $wgHGMRelease   = "%";
 $wgHGMMin_Value = 0;
 
@@ -212,7 +222,7 @@ $wgHGMDefaultFields = array(
     'percent_change',
     'mean',
     'stdev',
-    'bug'
+    'bugs'
 );
 
 
