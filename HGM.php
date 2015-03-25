@@ -169,7 +169,7 @@ function HGMRender($input, array $args, Parser $parser, $frame=null ) {
  */
 
 // Remote API
-
+$wgBugzillaURL    = 'https://bugzilla.mozilla.org'; // The URL for your Bugzilla installation
 $wgHGMTagName     = 'hgm'; // The tag name for your HGM installation (default: 'hgm')
 $wgHGMSQL         = "";
 $wgHGMSQL         = "SELECT metrics_files.file_name,metrics_files.file_id, metrics_files.mean, metrics_files.stdev, " .

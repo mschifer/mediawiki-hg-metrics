@@ -9,9 +9,19 @@
             foreach( $response->fields as $field ) {
                 echo "<th>";
                 switch( $field ) {
-                    case 'id':
-                        echo 'ID';
+                    case 'bugs':
+                        echo 'Related Bugs';
                         break;
+                    case 'stdev':
+                        echo 'Standard Deviation';
+                        break;
+                    case 'mean':
+                        echo 'Lifetime Mean';
+                        break;
+                    case 'percent_change':
+                        echo 'Percent Change this Release';
+                        break;
+
                     default:
                         echo htmlspecialchars(
                             ucfirst(
@@ -38,9 +48,8 @@
                     // Get our template path
                     $subtemplate = $base .
                         escapeshellcmd(
-                            str_replace('..', 'DOTS', $row[$field_name])
+                            str_replace('..', 'DOTS', $field_name)
                         ) . '.tpl';
-
                     // Make sure a template is there
                     if( !file_exists($subtemplate) ) {
                         $subtemplate = $base . '_default.tpl';
