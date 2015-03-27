@@ -171,14 +171,12 @@ function HGMRender($input, array $args, Parser $parser, $frame=null ) {
 // Remote API
 $wgBugzillaURL    = 'https://bugzilla.mozilla.org'; // The URL for your Bugzilla installation
 $wgHGMTagName     = 'hgm'; // The tag name for your HGM installation (default: 'hgm')
-$wgHGMSQL         = "";
 $wgHGMSQL         = "SELECT metrics_files.file_name,metrics_files.file_id, metrics_files.mean, metrics_files.stdev, " .
                            "metrics_summary.percent_change, metrics_releases.release_name, metrics_summary.bugs " .
                       "FROM metrics_files, metrics_summary, metrics_releases " .
                      "WHERE metrics_releases.release_id = metrics_summary.release_id "  .
                        "AND metrics_files.file_id = metrics_summary.file_id " .
                        "AND metrics_summary.percent_change > (metrics_files.mean + metrics_files.stdev + :min_change) " .
-                       "AND metrics_releases.release_name LIKE :release_name " .
                        "AND metrics_releases.release_name LIKE :release_name " .
                   "ORDER BY metrics_summary.release_id,metrics_summary.percent_change DESC; " ;
 
@@ -218,6 +216,7 @@ $wgHGMChartUrl = $wgScriptPath . '/extensions/HGM/charts'; // The URL to use to 
 
 $wgHGMDefaultFields = array(
     'release_name',
+    'file_id',
     'file_name',
     'percent_change',
     'mean',
