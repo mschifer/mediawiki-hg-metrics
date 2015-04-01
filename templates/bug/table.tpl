@@ -21,7 +21,9 @@
                     case 'percent_change':
                         echo 'Percent Change this Release';
                         break;
-
+                    case 'msgs`':
+                        echo 'Commit Messages';
+                        break;
                     default:
                         echo htmlspecialchars(
                             ucfirst(

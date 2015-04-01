@@ -58,13 +58,20 @@
 
                 switch( $filter_op ) {
                     case 'notlike':
-                        if (strpos($field_value, $filter_value) == false) {
-                            $matches = 1;
+                        $matches = 1;
+                        $notlist = explode(',', $filter_value);
+                        foreach ($notlist as $value) {
+                            if (strpos($field_value, $value) !== false) {
+                                $matches = 0;
+                            }
                         }
                         break;
                     case 'like':
-                        if (strpos($field_value, $filter_value) !== false) {
-                            $matches = 1;
+                        $likelist = explode(',', $filter_value);
+                        foreach ($likelist as $value) {
+                            if (strpos($field_value, $value) !== false) {
+                                $matches = 1;
+                            }
                         }
                         break;
                     case 'gt':

@@ -134,8 +134,6 @@ abstract class HGMBaseQuery {
     protected function _set_options($query_options_raw) {
         global $wgHGMRelease ;
         global $wgHGMMin_Value;
-        #$this->error = $query_options_raw;
-        #return;
 
         // Make sure query options are valid JSON
         $this->options = json_decode($query_options_raw, true);

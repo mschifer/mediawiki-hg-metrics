@@ -77,7 +77,6 @@ class HGMBugListing extends HGMOutput {
     protected function setup_template_data() {
 
         global $wgHGMDefaultFields;
-        #$this->response->files = json_encode($this->query->data);
         $this->response->files = $this->query->data;
         $this->response->fields = array();
 
