@@ -78,6 +78,25 @@ class HGMBugListing extends HGMOutput {
 
         global $wgHGMDefaultFields;
         $this->response->files = $this->query->data;
+        # Handle case of no data returned
+        if ( sizeof($this->response->files) == 0) { 
+            $blankData  = [ 
+                "file_name"=> "",
+                "file_id"=> "",
+                "mean"=> "",
+                "stdev"=> "",
+                "percent_change"=> "",
+                "release_name"=> "",
+                "bugs"=> "",
+                "backout_count"=> "",
+                "committers"=> "",
+                "reviewers"=> "",
+                "approvers"=> "",
+                "msgs"=> "",
+                "total_commits"=> "" ];
+             
+            $this->response->files = [ $blankData ];
+        }
         $this->response->fields = array();
 
 

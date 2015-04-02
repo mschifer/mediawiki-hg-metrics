@@ -3,7 +3,7 @@
         $base = dirname(__FILE__) . '/../../templates/fields/';
 
         foreach( $response->files as $row ) {
-            echo "<li class='hgm-status-${row['status']}'>";
+            #echo "<li class='hgm-status-${row['status']}'>";
             $count = 0;
             foreach( $response->fields as $field_name ) {
                 if( $count ) {
