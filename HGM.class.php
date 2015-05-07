@@ -16,18 +16,30 @@ class HGM {
 
     public static function create($config=array(), $opts=array(), $title='') {
 
-
         // Default configuration
         $theconfig = array(
-            'type'    => 'bug',
+            'type'    => 'churn',
             'display' => 'table',
+            'title' => $title
         );
-
+        $tmp_title = '';
+        $options = json_decode($opts, true);
+        if (array_key_exists('title', $options)) {
+            $tmp_title .= $options['title'];
+        }
+        if (array_key_exists('release', $options)) {
+            $tmp_title .= " For Release " . $options['release'];
+        }
+        if (array_key_exists('minimum_change', $options)) {
+            $tmp_title .= " Where change rate is greater than " . $options['minimum_change'] . " over average";
+        }
+        $title = $tmp_title;
+        
         // Overlay user's desired configuration
         foreach( $config as $key => $value ) {
             $theconfig[$key] = $value;
         }
-
+        #$title = $theconfig['title'];
         // Generate the proper object
         switch( $theconfig['display'] ) {
             case 'list':
@@ -44,6 +56,10 @@ class HGM {
 
             case 'pie':
                 $b = new HGMPieGraph($theconfig, $opts, $title);
+                break;
+
+            case 'line':
+                $b = new HGMLineGraph($theconfig, $opts, $title);
                 break;
 
             case 'inline':

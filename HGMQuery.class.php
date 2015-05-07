@@ -35,7 +35,6 @@ abstract class HGMBaseQuery {
         if (!$this->cache) {
             $this->cache = HGM::getCache();
         }
-
         return $this->cache;
     }
 
@@ -134,6 +133,7 @@ abstract class HGMBaseQuery {
     protected function _set_options($query_options_raw) {
         global $wgHGMRelease ;
         global $wgHGMMin_Value;
+        global $wgHGMLatest;
 
         // Make sure query options are valid JSON
         $this->options = json_decode($query_options_raw, true);
@@ -141,16 +141,19 @@ abstract class HGMBaseQuery {
             $this->error = 'Query options must be valid json';
             return;
         }
-        $html = '';
+
         // Default Values
+        $wgHGMLatest = false;
         foreach( $this->options as $key => $value ) {
-            $html .= 'Key:' . $key . ' Value:' . $value . '</br>';
             switch ($key) {
                 case 'release':
                    $wgHGMRelease = $value;
                    break;
                 case 'minimum_change':
                    $wgHGMMin_Value = $value;
+                   break;
+                case 'latest':
+                   $wgHGMLatest = true;
                    break;
             }
         }
@@ -175,13 +178,32 @@ abstract class HGMBaseQuery {
 class HGMSQLQuery extends HGMBaseQuery {
 
     function __construct($type, $options, $title='') {
-        global $wgHGMDefaultFields;
-        global $wgHGMSQL;
+        global $wgHGMDefaultFieldsHistory;
+        global $wgHGMSQLChurn;
+        global $wgHGMSQLHistory;
+        global $wgHGMLatest;
+        global $wgHGMSQLChurnOrder;
+        global $wgChurnWhere1;
+        global $wgChurnWhere2;
 
         parent::__construct($type, $options, $title);
 
         // See what sort of SQL query we are going to
-        $this->sql = $wgHGMSQL;
+        switch( $type ) {
+
+            // Whitelist
+            case 'history':
+                $this->sql = $wgHGMSQLHistory;
+                break;
+            case 'churn':
+            default:
+                if ( $wgHGMLatest ) {
+                    $hgOp = $wgChurnWhere2;
+                } else {
+                    $hgOp = $wgChurnWhere1;
+                }
+                $this->sql = $wgHGMSQLChurn . $hgOp . $wgHGMSQLChurnOrder;
+        }
 
         $this->fetch();
     }
@@ -204,8 +226,10 @@ class HGMSQLQuery extends HGMBaseQuery {
             return;
         }
         
-        $stmt->bindParam(":release_name", $wgHGMRelease, PDO::PARAM_STR);
-        $stmt->bindParam(":min_change", $wgHGMMin_Value, PDO::PARAM_INT);
+        if ($this->type == 'churn') {
+            $stmt->bindParam(":release_name", $wgHGMRelease, PDO::PARAM_STR);
+            $stmt->bindParam(":min_change", $wgHGMMin_Value, PDO::PARAM_INT);
+        }
         $stmt->execute();
         $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC) ;
         return;

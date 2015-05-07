@@ -17,6 +17,7 @@
 /**
  * Application metadata and credits. Should not be changed.
  */
+$wgUseCache = FALSE;
 
 $wgExtensionCredits['other'][] = array(
     'name'        => 'HGM',
@@ -171,16 +172,27 @@ function HGMRender($input, array $args, Parser $parser, $frame=null ) {
 // Remote API
 $wgBugzillaURL    = 'https://bugzilla.mozilla.org'; // The URL for your Bugzilla installation
 $wgHGMTagName     = 'hgm'; // The tag name for your HGM installation (default: 'hgm')
-$wgHGMSQL         = "SELECT metrics_files.file_name, metrics_files.file_id, metrics_files.mean, metrics_files.stdev, " .
+$wgHGMSQLChurn         = "SELECT metrics_files.file_name, metrics_files.file_id, metrics_files.mean, metrics_files.stdev, " .
                            "metrics_summary.percent_change, metrics_releases.release_name, metrics_summary.bugs, " .  
                            "metrics_summary.backout_count, metrics_summary.committers, metrics_summary.reviewers, " .
-                           "metrics_summary.approvers, metrics_summary.msgs, metrics_summary.total_commits " .
+                           "metrics_summary.approvers, metrics_summary.msgs, metrics_summary.total_commits, " .
+				   "metrics_summary.regression_count,  metrics_summary.bug_count " .
                       "FROM metrics_files, metrics_summary, metrics_releases " .
                      "WHERE metrics_releases.release_id = metrics_summary.release_id "  .
                        "AND metrics_files.file_id = metrics_summary.file_id " .
-                       "AND metrics_summary.percent_change > (metrics_files.mean + metrics_files.stdev + :min_change) " .
-                       "AND metrics_releases.release_name LIKE :release_name " .
-                  "ORDER BY metrics_summary.release_id,metrics_summary.percent_change DESC; " ;
+                       "AND metrics_summary.percent_change > (metrics_files.mean + metrics_files.stdev + :min_change) ";
+                       
+$wgChurnWhere1       = "AND metrics_releases.release_name LIKE :release_name " ;
+$wgChurnWhere2       = "AND metrics_releases.release_id =  (SELECT MAX(release_id) FROM metrics_releases WHERE release_name LIKE :release_name) ";
+$wgHGMSQLChurnOrder = "ORDER BY metrics_summary.release_id,metrics_summary.percent_change DESC LIMIT 10000; " ;
+
+$wgHGMSQLHistory         = "SELECT metrics_files.file_id, metrics_files.file_name, metrics_releases.release_name, metrics_summary.regression_count, metrics_summary.bug_count, metrics_summary.author_count FROM  metrics_files, metrics_summary, metrics_releases WHERE metrics_releases.release_id = metrics_summary.release_id AND  metrics_files.file_id = metrics_summary.file_id AND metrics_releases.release_name LIKE :release_name ORDER BY metrics_summary.regression_count DESC LIMIT 10";
+
+$wgHGMSQLHistory         = "SELECT metrics_releases.release_name, sum(metrics_summary.regression_count) FROM metrics_summary, metrics_releases WHERE metrics_releases.release_id = metrics_summary.release_id GROUP BY metrics_releases.release_name ORDER BY metrics_releases.release_number";
+
+$wgHGMSQLHistory         = "SELECT metrics_releases.release_number, sum(metrics_summary.regression_count) FROM metrics_summary, metrics_releases WHERE metrics_releases.release_id = metrics_summary.release_id GROUP BY metrics_releases.release_number ORDER BY metrics_releases.release_number";
+
+$wgHGMSQLHistory         = "SELECT metrics_releases.release_name, metrics_releases.release_number, sum(metrics_summary.regression_count), sum(metrics_summary.bug_count), sum(metrics_summary.backout_count), sum(metrics_summary.author_count), sum(metrics_summary.total_commits) FROM  metrics_summary, metrics_releases WHERE metrics_releases.release_id = metrics_summary.release_id GROUP BY metrics_releases.release_name ORDER BY metrics_releases.release_number";
 
 $wgHGMRelease   = "%";
 $wgHGMMin_Value = 0;
@@ -200,21 +212,31 @@ $wgHGMFontStorage = $cwd . '/pchart/fonts'; // Path to font directory for font d
 $wgHGMChartUrl = $wgScriptPath . '/extensions/HGM/charts'; // The URL to use to display charts
 // The default fields to display
 
-$wgHGMDefaultFields = array(
+$wgHGMDefaultFieldsChurn = array(
     'release_name',
     'file_name',
     'percent_change',
     'mean',
     'stdev',
     'backout_count',
+    'regression_count',
+    'bug_count',
     'committers',
     'reviewers',
     'approvers',
     'bugs',
+    'file_id',
+    'total_commits',
     'msgs'
 );
 
-
+$wgHGMDefaultFieldsHistory = array(
+ 'file_name',
+ 'release_name',
+ 'regression_count',
+ 'bug_count',
+ 'author_count'
+);
 $wgHGMTable = array(
   'pageSize' => 10, //default pagination count
   'lengthMenu' => '[[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]]', //default length set

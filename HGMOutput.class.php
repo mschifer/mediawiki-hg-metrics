@@ -76,24 +76,24 @@ class HGMBugListing extends HGMOutput {
 
     protected function setup_template_data() {
 
-        global $wgHGMDefaultFields;
+        global $wgHGMDefaultFieldsChurn;
+        global $wgHGMDefaultFieldsHistory;
+
         $this->response->files = $this->query->data;
         # Handle case of no data returned
+        # Iterate over the default fields list 
         if ( sizeof($this->response->files) == 0) { 
-            $blankData  = [ 
-                "file_name"=> "",
-                "file_id"=> "",
-                "mean"=> "",
-                "stdev"=> "",
-                "percent_change"=> "",
-                "release_name"=> "",
-                "bugs"=> "",
-                "backout_count"=> "",
-                "committers"=> "",
-                "reviewers"=> "",
-                "approvers"=> "",
-                "msgs"=> "",
-                "total_commits"=> "" ];
+            switch( $this->config['type']) {
+                case 'history':
+                    foreach ($wgHGMDefaultFieldsHistory as $fld) {
+                        $blankData[$fld] = "";
+                    }
+                case 'churn':
+                default:
+                    foreach ($wgHGMDefaultFieldsChurn as $fld) {
+                        $blankData[$fld] = "";
+                    }
+            }
              
             $this->response->files = [ $blankData ];
         }
@@ -116,7 +116,15 @@ class HGMBugListing extends HGMOutput {
         }else {
             // If the user didn't specify any fields in the query config use
             // default fields
-            $this->response->fields = $wgHGMDefaultFields;
+            switch( $this->config['type']) {
+                case 'history':
+                    $this->response->fields = $wgHGMDefaultFieldsHistory;
+                    break;
+                case 'churn':
+                default:
+                    $this->response->fields = $wgHGMDefaultFieldsChurn;
+                    break;
+            }
         }
     }
 
@@ -210,11 +218,43 @@ class HGMPieGraph extends HGMGraph {
         $startY = ( isset($startY) ) ? $startY : $radius;
 
         $pData = new pData();
-        $pData->addPoints($this->query->data['data'], 'Counts');
-        $pData->setAxisName(0, 'Bugs');
-        $pData->addPoints($this->query->data['x_labels'], "Bugs");
-        $pData->setSerieDescription("Bugs", "Bugs");
-        $pData->setAbscissa("Bugs");
+
+        $data['x-axis'] = array();
+        $data['y-axis'] = array();
+        echo "MOO\n<br/>";
+        echo "MOO\n<br/>";
+        echo "MOO\n<br/>";
+        echo "MOO\n<br/>";
+        echo "MOO\n<br/>";
+        echo "MOO\n<br/>";
+        echo "MOO\n<br/>";
+        var_dump($this->query->options);
+        var_dump($this->query->data);
+        foreach ( $this->query->data as $row) {
+            if (isset($this->query->options['x_axis_field'])) {
+                array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
+            } else {
+                echo "PIE x_axis_field is NOT set";
+                array_push($data['x-axis'], 0 );
+            }
+            if (isset($this->query->options['y_axis_field'])) {
+                array_push($data['y-axis'], $row[$this->query->options['y_axis_field']]);
+            } else {
+                array_push($data['y-axis'], 0 );
+                echo "PIE y_axis_field is NOT set";
+            }
+            #foreach ( array_keys($row) as $field_name ) {
+            #    array_push($data['x-axis'], $field_name);
+            #    array_push($data['y-axis'], $row[$field_name]);
+            #}
+        }
+        $pData = new pData();
+        $pData->addPoints($data['y-axis'], 'Counts');
+        $pData->setAxisName(0, 'Counts');
+        $pData->addPoints($data['x-axis'], "Fields");
+        $pData->setSerieDescription("Fields", "Fields");
+        $pData->setAbscissa("Fields");
+
 
         $pImage = new pImage($imgX, $imgY, $pData);
         $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/verdana.ttf', 'FontSize' => $font));
@@ -250,9 +290,31 @@ class HGMBarGraph extends HGMGraph {
     {
         global $wgHGMChartStorage, $wgHGMFontStorage;
         $pData = new pData();
-        $pData->addPoints($this->query->data['data'], 'Counts');
+        $data['x-axis'] = array();
+        $data['y-axis'] = array();
+
+        foreach ( $this->query->data as $row) {
+            if (isset($this->query->options['x_axis_field'])) {
+                array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
+            } else {
+                echo "BAR x_axis_field is NOT set";
+                array_push($data['x-axis'], 0 );
+            }
+            if (isset($this->query->options['y_axis_field'])) {
+                array_push($data['y-axis'], $row[$this->query->options['y_axis_field']]);
+            } else {
+                echo "BAR y_axis_field is NOT set";
+                array_push($data['y-axis'], 0 );
+            }
+            #foreach ( array_keys($row) as $field_name ) {
+            #    array_push($data['x-axis'], $field_name);
+            #    array_push($data['y-axis'], $row[$field_name]);
+            #}
+        }
+
+        $pData->addPoints($data['y-axis'], 'Counts');
         $pData->setAxisName(0, 'Bugs');
-        $pData->addPoints($this->query->data['x_labels'], "Bugs");
+        $pData->addPoints($data['x-axis'], "Bugs");
         $pData->setSerieDescription("Bugs", "Bugs");
         $pData->setAbscissa("Bugs");
 
@@ -269,4 +331,93 @@ class HGMBarGraph extends HGMGraph {
     }
 
 }
+
+class HGMLineGraph extends HGMGraph {
+
+    public function generate_chart($chart_name)
+    {
+        global $wgHGMChartStorage, $wgHGMFontStorage;
+
+        $pData = new pData();
+        $data['x-axis'] = array();
+        $data['y-axis'] = array();
+        $data['line-names'] = array('nightly','aurora','beta');
+        foreach ($data['line-names'] as $branch) {
+            $data['x-axis'][$branch] = array();
+            $data['y-axis'][$branch] = array();
+        }
+        if ( (! isset($this->query->options['y_axis_field'])) or
+        (! isset($this->query->options['x_axis_field'])) ) {
+            return $this->error = "requires fields x_axis_field and y_axis_field to be set";
+        }
+        foreach ( $this->query->data as $row) {
+            array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
+            foreach ($data['line-names'] as $branch) {
+                if ( strripos($row['release_name'],$branch ) !== FALSE ) {
+                    array_push($data['y-axis'][$branch], $row[$this->query->options['y_axis_field']]);
+                    break;
+                }
+            }
+        }
+        $releases = array_unique($data['x-axis']);
+        foreach  ($data['line-names'] as $branch) {
+            $pData->addPoints($data['y-axis'][$branch],$branch);
+            $pData->setSerieWeight($branch,2);
+        }
+        $pData->addPoints($releases,"Releases");
+        $pData->setSerieDescription("Releases","Releases");
+        $pData->setAbscissa("Releases");
+
+
+       /* Create and populate the pData object */
+        #$pData->addPoints(array(-4,VOID,VOID,12,8,3),"Probe 1");
+        #$pData->addPoints(array(3,12,15,8,5,-5),"Probe 2");
+        #$pData->addPoints(array(2,7,5,18,19,22),"Probe 3");
+        #$pData->setSerieTicks("Probe 2",4);
+        #$pData->setSerieWeight("Probe 3",2);
+        #$pData->setAxisName(0,"Temperatures");
+        #$pData->addPoints(array("Jan","Feb","Mar","Apr","May","Jun"),"Labels");
+        #$pData->setSerieDescription("Labels","Months");
+        #$pData->setAbscissa("Labels");
+
+
+        /* Create the pChart object */
+        $pImage = new pImage(700,230,$pData);
+
+        /* Turn of Antialiasing */
+        $pImage->Antialias = FALSE;
+
+        /* Add a border to the picture */
+        $pImage->drawRectangle(0,0,699,229,array("R"=>0,"G"=>0,"B"=>0));
+
+        /* Write the chart title */
+        $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/Forgotte.ttf', 'FontSize' => 11));
+        $pImage->drawText(150,35,"Firefox Regression Rate",array("FontSize"=>20,"Align"=>TEXT_ALIGN_BOTTOMMIDDLE));
+
+        /* Set the default font */
+        $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/pf_arma_five.ttf', 'FontSize' => 6));
+
+        /* Define the chart area */
+        $pImage->setGraphArea(60,40,650,200);
+
+        /* Draw the scale */
+        $scaleSettings = array("XMargin"=>10,"YMargin"=>10,"Floating"=>TRUE,"GridR"=>200,"GridG"=>200,"GridB"=>200,"DrawSubTicks"=>TRUE,"CycleBackground"=>TRUE);
+        $pImage->drawScale($scaleSettings);
+
+        /* Turn on Antialiasing */
+        $pImage->Antialias = TRUE;
+
+
+        /* Draw the line chart */
+        /* Render the picture (choose the best way) */
+        $pImage->drawLineChart();
+        $pImage->drawLegend(540,20,array("Style"=>LEGEND_NOBORDER,"Mode"=>LEGEND_HORIZONTAL));
+        $pImage->render($wgHGMChartStorage . '/' . $chart_name . '.png');
+        $cache = $this->_getCache();
+        $cache->set($chart_name, $chart_name . '.png');
+        return $chart_name;
+    }
+
+}
+
 

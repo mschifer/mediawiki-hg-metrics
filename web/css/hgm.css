@@ -21,26 +21,35 @@ table.jquery tr.even td.sorting_1 {
 
 /* Table view styles */
 
-tr.bugzilla-status-NEW {
-    background-color: #ffeeee;
-}
-
-tr.bugzilla-status-ASSIGNED {
-    background-color: #eeeeff;
-}
-
-tr.bugzilla-status-REOPENED {
-    background-color: #ffffee;
-}
-
-tr.bugzilla-status-RESOLVED {
-    background-color: #eeffee;
-}
-
-tr.bugzilla-status-VERIFIED {
+/* tr.bugzilla-status-NEW { */
+/*     background-color: #ffeeee; */
+/* } */
+/*  */
+/* tr.bugzilla-status-ASSIGNED { */
+/*     background-color: #eeeeff; */
+/* } */
+/*  */
+/* tr.bugzilla-status-REOPENED { */
+/*     background-color: #ffffee; */
+/* } */
+/*  */
+/* tr.bugzilla-status-RESOLVED { */
+/*     background-color: #eeffee; */
+/* } */
+/*  */
+/* tr.bugzilla-status-VERIFIED { */
+/*     background-color: #ccffcc; */
+/* } */
+/* ---- HG Styles --- */
+caption.hgm-title {
     background-color: #ccffcc;
 }
+span.hgm-field-file_name {
+    font-size: 85%
+}
 
+span.hgm-field-backout_count {
+}
 /* General styles */
 .bugzilla-status-RESOLVED .bugzilla-data-id,
 .bugzilla-status-VERIFIED .bugzilla-data-id {
