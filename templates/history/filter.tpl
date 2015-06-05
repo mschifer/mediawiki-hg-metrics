@@ -23,6 +23,9 @@
                     case 'mean':
                         echo 'Lifetime Mean';
                         break;
+                    case 'regression_rate':
+                        echo 'Regresions Per Line';
+                        break;
                     case 'percent_change':
                         echo 'Percent Change this Release';
                         break;

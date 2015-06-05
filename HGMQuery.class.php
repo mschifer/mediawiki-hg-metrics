@@ -9,7 +9,7 @@ require_once 'HTTP/Request2.php';
 class HGMQuery {
     public static function create($type, $options, $title) {
 
-        return new HGMSQLQuery($type, $options, $title); break; 
+        return new HGMSQLQuery($type, $options, $title); break; ;
     }
 }
 
@@ -134,6 +134,9 @@ abstract class HGMBaseQuery {
         global $wgHGMRelease ;
         global $wgHGMMin_Value;
         global $wgHGMLatest;
+        global $wgReportType;
+        global $wgGroupBy;
+        global $wgOrderBy;
 
         // Make sure query options are valid JSON
         $this->options = json_decode($query_options_raw, true);
@@ -144,6 +147,8 @@ abstract class HGMBaseQuery {
 
         // Default Values
         $wgHGMLatest = false;
+        $wgOrderBy   = 'ORDER BY regression_rate DESC';
+        $wgGroupBy   = '';
         foreach( $this->options as $key => $value ) {
             switch ($key) {
                 case 'release':
@@ -154,6 +159,15 @@ abstract class HGMBaseQuery {
                    break;
                 case 'latest':
                    $wgHGMLatest = true;
+                   break;
+                case 'report':
+                   $wgReportType = $value;
+                   break;
+                case 'group':
+                   $wgGroupBy = "GROUP BY ". $value;
+                   break;
+                case 'order':
+                   $wgOrderBy = "ORDER BY ". $value;
                    break;
             }
         }
@@ -185,6 +199,10 @@ class HGMSQLQuery extends HGMBaseQuery {
         global $wgHGMSQLChurnOrder;
         global $wgChurnWhere1;
         global $wgChurnWhere2;
+        global $wgHGMSQLBugHistory;
+        global $wgReportType;
+        global $wgOrderBy;
+        global $wgGroupBy;
 
         parent::__construct($type, $options, $title);
 
@@ -193,7 +211,9 @@ class HGMSQLQuery extends HGMBaseQuery {
 
             // Whitelist
             case 'history':
-                $this->sql = $wgHGMSQLHistory;
+                # Add ORDER BY clause if specified
+            
+                $this->sql = $wgHGMSQLBugHistory[$wgReportType] . " " . $wgGroupBy . " " . $wgOrderBy;
                 break;
             case 'churn':
             default:
@@ -213,6 +233,7 @@ class HGMSQLQuery extends HGMBaseQuery {
         global $dbh;
         global $wgHGMRelease;
         global $wgHGMMin_Value;
+        global  $wgHGMLatest;
 
         $dbfile = __DIR__ . '/churndb.sql';
         $dbh = new PDO('sqlite:' . $dbfile );
@@ -227,8 +248,14 @@ class HGMSQLQuery extends HGMBaseQuery {
         }
         
         if ($this->type == 'churn') {
-            $stmt->bindParam(":release_name", $wgHGMRelease, PDO::PARAM_STR);
-            $stmt->bindParam(":min_change", $wgHGMMin_Value, PDO::PARAM_INT);
+            if ( $wgHGMLatest ) {
+                $stmt->bindParam(":release_name1", $wgHGMRelease, PDO::PARAM_STR);
+                $stmt->bindParam(":release_name2", $wgHGMRelease, PDO::PARAM_STR);
+                $stmt->bindParam(":min_change", $wgHGMMin_Value, PDO::PARAM_INT);
+            } else {
+                $stmt->bindParam(":release_name", $wgHGMRelease, PDO::PARAM_STR);
+                $stmt->bindParam(":min_change", $wgHGMMin_Value, PDO::PARAM_INT);
+            }
         }
         $stmt->execute();
         $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC) ;

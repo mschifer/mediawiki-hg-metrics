@@ -10,17 +10,20 @@
             foreach( $response->fields as $field ) {
                 echo "<th>";
                 switch( $field ) {
-                    case 'bugs':
-                        echo 'Related Bugs';
+                    case 'bug_count':
+                        echo 'Total Bugs';
                         break;
-                    case 'stdev':
-                        echo 'Standard Deviation';
+                    case 'component':
+                        echo 'Component';
                         break;
-                    case 'mean':
-                        echo 'Lifetime Mean';
+                    case 'release_number':
+                        echo 'Release';
                         break;
-                    case 'percent_change':
-                        echo 'Percent Change this Release';
+                    case 'release_name':
+                        echo 'Branch';
+                        break;
+                    case 'regression_rate':
+                        echo 'Regressions Per<br/>Line';
                         break;
                     case 'msgs`':
                         echo 'Commit Messages';

@@ -19,6 +19,27 @@ abstract class HGMOutput {
             $this->error = $this->query->error;
         }
         $e = new Exception;
+        $opts = $this->query->options;
+        if ($this->config['type']== "churn" ) {
+            $tmp_title = '';
+            if (array_key_exists('title', $this->query->options)) {
+                $tmp_title .= $this->query->options['title'];
+            }
+            if (array_key_exists('release', $this->query->options)) {
+                $tmp_title .= " For Release " . $this->query->options['release'];
+            }
+            if (array_key_exists('minimum_change', $this->query->options)) {
+                $tmp_title .= " Where change rate is greater than " . $this->query->options['minimum_change'] . " over average";
+            }
+            $this->title = $tmp_title;
+        }
+        if ($this->config['type']== "history" ) {
+            if (array_key_exists('title', $this->query->options)) {
+                $this->title = $this->query->options['title'];
+            } else {
+                $this->title = "Default Title:" . $this->title;
+            }
+        }
 
     }
 
@@ -78,21 +99,15 @@ class HGMBugListing extends HGMOutput {
 
         global $wgHGMDefaultFieldsChurn;
         global $wgHGMDefaultFieldsHistory;
+        global $wgHGMDefaultFields;
+        global $wgReportType;
 
         $this->response->files = $this->query->data;
         # Handle case of no data returned
         # Iterate over the default fields list 
         if ( sizeof($this->response->files) == 0) { 
-            switch( $this->config['type']) {
-                case 'history':
-                    foreach ($wgHGMDefaultFieldsHistory as $fld) {
-                        $blankData[$fld] = "";
-                    }
-                case 'churn':
-                default:
-                    foreach ($wgHGMDefaultFieldsChurn as $fld) {
-                        $blankData[$fld] = "";
-                    }
+            foreach ($wgHGMDefaultFields[$wgReportType] as $fld) {
+                $blankData[$fld] = "";
             }
              
             $this->response->files = [ $blankData ];
@@ -116,15 +131,7 @@ class HGMBugListing extends HGMOutput {
         }else {
             // If the user didn't specify any fields in the query config use
             // default fields
-            switch( $this->config['type']) {
-                case 'history':
-                    $this->response->fields = $wgHGMDefaultFieldsHistory;
-                    break;
-                case 'churn':
-                default:
-                    $this->response->fields = $wgHGMDefaultFieldsChurn;
-                    break;
-            }
+            $this->response->fields = $wgHGMDefaultFields[$wgReportType];
         }
     }
 
@@ -148,6 +155,7 @@ abstract class HGMGraph extends HGMOutput {
         switch($this->config['size']) {
 
             // whitelist
+            case 'smaller':
             case 'small':
             case 'medium':
             case 'large':
@@ -190,26 +198,32 @@ class HGMPieGraph extends HGMGraph {
         // TODO: Make all this size stuff trivial for other
         // graph types to plug into
         switch($this->_get_size()) {
-            case 'small':
+            case 'smaller':
                 $imgX = 200;
                 $imgY = 65;
                 $radius = 30;
                 $font = 6;
                 break;
 
-            case 'medium':
+            case 'small':
                 $imgX = 400;
                 $imgY = 125;
                 $radius = 60;
                 $font = 7;
                 break;
 
-            case 'large':
-            default:
+            case 'medium':
                 $imgX = 500;
                 $imgY = 245;
                 $radius = 120;
                 $font = 9;
+                break;
+            case 'large':
+            default:
+                $imgX = 1000;
+                $imgY = 500;
+                $radius = 240;
+                $font = 12;
         }
 
         $padding = 5;
@@ -221,16 +235,14 @@ class HGMPieGraph extends HGMGraph {
 
         $data['x-axis'] = array();
         $data['y-axis'] = array();
-        echo "MOO\n<br/>";
-        echo "MOO\n<br/>";
-        echo "MOO\n<br/>";
-        echo "MOO\n<br/>";
-        echo "MOO\n<br/>";
-        echo "MOO\n<br/>";
-        echo "MOO\n<br/>";
-        var_dump($this->query->options);
-        var_dump($this->query->data);
+        $maxrows = 77;
+        $current_row = 0;
         foreach ( $this->query->data as $row) {
+            if ($current_row > $maxrows) {
+               echo 'Max Rows Exceeded - No more colors to choose from<br/>';
+                break;
+            }
+            $current_row += 1;
             if (isset($this->query->options['x_axis_field'])) {
                 array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
             } else {
@@ -243,10 +255,6 @@ class HGMPieGraph extends HGMGraph {
                 array_push($data['y-axis'], 0 );
                 echo "PIE y_axis_field is NOT set";
             }
-            #foreach ( array_keys($row) as $field_name ) {
-            #    array_push($data['x-axis'], $field_name);
-            #    array_push($data['y-axis'], $row[$field_name]);
-            #}
         }
         $pData = new pData();
         $pData->addPoints($data['y-axis'], 'Counts');
@@ -292,8 +300,11 @@ class HGMBarGraph extends HGMGraph {
         $pData = new pData();
         $data['x-axis'] = array();
         $data['y-axis'] = array();
-
+        $maxbars = 15;
+        $barcount = 0;
         foreach ( $this->query->data as $row) {
+            var_dump($row);
+            $barcount += 1;
             if (isset($this->query->options['x_axis_field'])) {
                 array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
             } else {
@@ -306,21 +317,40 @@ class HGMBarGraph extends HGMGraph {
                 echo "BAR y_axis_field is NOT set";
                 array_push($data['y-axis'], 0 );
             }
-            #foreach ( array_keys($row) as $field_name ) {
-            #    array_push($data['x-axis'], $field_name);
-            #    array_push($data['y-axis'], $row[$field_name]);
-            #}
+            if ($barcount > $maxbars) {
+               break;
+            }
         }
 
-        $pData->addPoints($data['y-axis'], 'Counts');
-        $pData->setAxisName(0, 'Bugs');
-        $pData->addPoints($data['x-axis'], "Bugs");
-        $pData->setSerieDescription("Bugs", "Bugs");
-        $pData->setAbscissa("Bugs");
+        $pData->addPoints($data['y-axis'], $this->query->options['y_axis_field']);
+        $pData->setAxisName(0, $this->query->options['x_axis_field']);
+        $pData->addPoints($data['x-axis'], $this->query->options['x_axis_field']);
+        $pData->setSerieDescription($this->query->options['x_axis_field'], $this->query->options['x_axis_field']);
+        $pData->setAbscissa($this->query->options['x_axis_field']);
 
-        $pImage = new pImage(600,300, $pData);
-        $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/verdana.ttf', 'FontSize' => 6));
-        $pImage->setGraphArea(75, 30, 580, 280);
+        switch($this->config['size']) {
+            case 'smaller':
+            case 'small':
+                $w = 400;
+                $h = 200;
+                $font = 10;
+                break;
+            case 'medium':
+                $w = 600;
+                $h = 300;
+                $font = 12;
+                break;
+            case 'large':
+            default:
+                $w = 1200;
+                $h = 600;
+                $font = 16;
+                break;
+        }
+
+        $pImage = new pImage($w ,$h , $pData);
+        $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/verdana.ttf', 'FontSize' => $font));
+        $pImage->setGraphArea(75, 30, $w - 20, $h - 20);
         $pImage->drawScale(array("CycleBackground"=>TRUE,'Factors'=>array(1),"DrawSubTicks"=>FALSE,"GridR"=>0,"GridG"=>0,"GridB"=>0,"GridAlpha"=>10, "Pos"=>SCALE_POS_TOPBOTTOM)); 
 
         $pImage->drawBarChart();
@@ -333,72 +363,99 @@ class HGMBarGraph extends HGMGraph {
 }
 
 class HGMLineGraph extends HGMGraph {
-
     public function generate_chart($chart_name)
     {
         global $wgHGMChartStorage, $wgHGMFontStorage;
+        global $wgReportType;
 
-        $pData = new pData();
-        $data['x-axis'] = array();
-        $data['y-axis'] = array();
-        $data['line-names'] = array('nightly','aurora','beta');
-        foreach ($data['line-names'] as $branch) {
-            $data['x-axis'][$branch] = array();
-            $data['y-axis'][$branch] = array();
-        }
         if ( (! isset($this->query->options['y_axis_field'])) or
-        (! isset($this->query->options['x_axis_field'])) ) {
-            return $this->error = "requires fields x_axis_field and y_axis_field to be set";
+        (! isset($this->query->options['x_axis_field'])) or
+        (! isset($this->query->options['datapoints'])) ) {
+            return $this->error = "requires fields x_axis_field, y_axis_field or datapoints to be set";
         }
-        foreach ( $this->query->data as $row) {
-            array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
-            foreach ($data['line-names'] as $branch) {
-                if ( strripos($row['release_name'],$branch ) !== FALSE ) {
-                    array_push($data['y-axis'][$branch], $row[$this->query->options['y_axis_field']]);
-                    break;
-                }
-            }
+
+        $releases = array();
+        switch( $wgReportType) {
+            case 'detail_history':
+                $data = $this->detail_history_chart();
+                break;
+            case 'file_regression_history':
+            case 'team_regression_history':
+                $data = $this->regression_history_chart();
+                break;
+            case 'release_history':
+            default:
+                $data = $this->release_history_chart();
+                break;
+         }
+        $pData = new pData();
+        
+        foreach (array_unique($data['x-axis'], SORT_REGULAR) as $rel) {
+            if ( gettype($rel) != "array") {
+                $releases[] = $rel;
+            }  
         }
-        $releases = array_unique($data['x-axis']);
-        foreach  ($data['line-names'] as $branch) {
-            $pData->addPoints($data['y-axis'][$branch],$branch);
-            $pData->setSerieWeight($branch,2);
+        $maxlines = 10;
+        $linesadded = 0;
+        foreach  (array_keys($data['y-axis']) as $linename ) {
+            $linesadded += 1;
+            $pData->addPoints($data['y-axis'][$linename],$linename);
+            $pData->setSerieWeight($linename,2);
+            if ($linesadded >= $maxlines) {
+                break;
+            } 
         }
+
+        # X Axis Lables
         $pData->addPoints($releases,"Releases");
         $pData->setSerieDescription("Releases","Releases");
         $pData->setAbscissa("Releases");
 
-
-       /* Create and populate the pData object */
-        #$pData->addPoints(array(-4,VOID,VOID,12,8,3),"Probe 1");
-        #$pData->addPoints(array(3,12,15,8,5,-5),"Probe 2");
-        #$pData->addPoints(array(2,7,5,18,19,22),"Probe 3");
-        #$pData->setSerieTicks("Probe 2",4);
-        #$pData->setSerieWeight("Probe 3",2);
-        #$pData->setAxisName(0,"Temperatures");
-        #$pData->addPoints(array("Jan","Feb","Mar","Apr","May","Jun"),"Labels");
-        #$pData->setSerieDescription("Labels","Months");
-        #$pData->setAbscissa("Labels");
-
-
         /* Create the pChart object */
-        $pImage = new pImage(700,230,$pData);
+        $l1 = 300;
+        $l2 = 50;
+        switch($this->config['size']) {
+            case 'smaller':
+            case 'small':
+                $w = 700;
+                $h = 230;
+                $l1 = 150;
+                $l2 = 10;
+                $font = 6;
+                break;
+            case 'medium':
+                $w = 900;
+                $h = 365;
+                $l1 = 300;
+                $l2 = 20;
+                $font = 9;
+                break;
+            case 'large':
+            default:
+                $w = 1100;
+                $h = 600;
+                $l1 = 400;
+                $l2 = 20;
+                $font = 11;
+                break;
+        }
+        $pImage = new pImage($w,$h,$pData);
 
         /* Turn of Antialiasing */
         $pImage->Antialias = FALSE;
 
         /* Add a border to the picture */
-        $pImage->drawRectangle(0,0,699,229,array("R"=>0,"G"=>0,"B"=>0));
+        $pImage->drawRectangle(0,0,$w - 1, $h - 1,array("R"=>0,"G"=>0,"B"=>0));
 
         /* Write the chart title */
-        $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/Forgotte.ttf', 'FontSize' => 11));
-        $pImage->drawText(150,35,"Firefox Regression Rate",array("FontSize"=>20,"Align"=>TEXT_ALIGN_BOTTOMMIDDLE));
+        $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/Forgotte.ttf', 'FontSize' => $font + 4));
+        $pImage->drawText(150,35,$this->title,array("FontSize"=>20,"Align"=>TEXT_ALIGN_BOTTOMMIDDLE));
 
         /* Set the default font */
-        $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/pf_arma_five.ttf', 'FontSize' => 6));
+        $pImage->setFontProperties(array('FontName' => $wgHGMFontStorage . '/pf_arma_five.ttf', 'FontSize' => $font));
 
         /* Define the chart area */
-        $pImage->setGraphArea(60,40,650,200);
+        $pImage->setGraphArea(60,40,$w - 50,$h - 50);
 
         /* Draw the scale */
         $scaleSettings = array("XMargin"=>10,"YMargin"=>10,"Floating"=>TRUE,"GridR"=>200,"GridG"=>200,"GridB"=>200,"DrawSubTicks"=>TRUE,"CycleBackground"=>TRUE);
@@ -411,13 +468,169 @@ class HGMLineGraph extends HGMGraph {
         /* Draw the line chart */
         /* Render the picture (choose the best way) */
         $pImage->drawLineChart();
-        $pImage->drawLegend(540,20,array("Style"=>LEGEND_NOBORDER,"Mode"=>LEGEND_HORIZONTAL));
+        $pImage->drawLegend($w - $l1,$l2,array("Style"=>LEGEND_NOBORDER,"Mode"=>LEGEND_VERTICAL));
         $pImage->render($wgHGMChartStorage . '/' . $chart_name . '.png');
         $cache = $this->_getCache();
         $cache->set($chart_name, $chart_name . '.png');
         return $chart_name;
     }
 
+    public function release_history_chart()
+    {
+
+        $data['x-axis'] = array();
+        $data['y-axis'] = array();
+        $data['line-names'] = array();
+        $data['datapoint-names'] = array();
+
+        # Specify the lines to be charted
+        # Defaults to the basic set of branches
+        if (isset($this->query->options['y_axis_field'])) {
+            if (is_array(($this->query->options['y_axis_field']))) {
+                foreach ($this->query->options['y_axis_field'] as $item) {
+                    array_push($data['line-names'], $item);
+                }
+            } else {
+                array_push($data['line-names'],$this->query->options['y_axis_field']);
+            }
+        } else {
+            $data['line-names'] = array('nightly','aurora','beta');
+        }
+
+        # Determine the data points to be charted
+        if (isset($this->query->options['datapoints'])) {
+            if (is_array(($this->query->options['datapoints']))) {
+                foreach ($this->query->options['datapoints'] as $item) {
+                    array_push($data['datapoint-names'], $item);
+                }
+            } else {
+                array_push($data['datapoint-names'],$this->query->options['datapoints']);
+            }
+        } else {
+            $data['datapoint-names'] = array('regression_count');
+        }
+
+        foreach ( $this->query->data as $row) {
+            array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
+            foreach ( $data['line-names'] as $ln) {
+                # Only add data point to the line if the release name contains the line name root
+                if ( strripos($row['release_name'],$ln) !== FALSE ) {
+                    foreach ( $data['datapoint-names'] as $dp ) {
+                        $line = $ln . '_' . $dp;
+                        if (! array_key_exists($line,$data['y-axis'] )) {
+                            $data['y-axis'][$line] = array();
+                        }
+                        array_push($data['y-axis'][$line], $row[$dp]);
+                    }
+                }
+            }
+        }
+
+        return $data;
+
+    }
+    public function detail_history_chart()
+    {
+        $data['x-axis'] = array();
+        $data['y-axis'] = array();
+        $data['line-names'] = array();
+        $data['datapoint-names'] = array();
+
+        # line names are going to be compoent names, author names etc.. drawn from the query
+        # we don't want to have to work through the query multiple times to get it either.
+        # Specify the lines to be charted
+        # Defaults to the basic set of branches
+
+        # Determine the data points to be charted
+        if (isset($this->query->options['datapoints'])) {
+            if (is_array(($this->query->options['datapoints']))) {
+                foreach ($this->query->options['datapoints'] as $item) {
+                    array_push($data['datapoint-names'], $item);
+                }
+            } else {
+                array_push($data['datapoint-names'],$this->query->options['datapoints']);
+            }
+        } else {
+            $data['datapoint-names'] = array('bug_count');
+        }
+        $components = array();
+        foreach ( $this->query->data as $row) {
+            array_push($components, $row[$this->query->options['y_axis_field'][0]]);
+        }
+        $data['line-names'] = array_unique($components, SORT_REGULAR);
+        echo "<BR/>";
+
+        foreach ( $this->query->data as $row) {
+            array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
+            foreach ( $data['line-names'] as $ln) {
+                # Only add data point to the line if the release name contains the line name root
+                if ( strripos($row[$this->query->options['y_axis_field']],$ln) !== FALSE ) {
+                    foreach ( $data['datapoint-names'] as $dp ) { 
+                        $line = $ln . '_' . $dp;
+                        if (! array_key_exists($line,$data['y-axis'] )) {
+                            $data['y-axis'][$line] = array();
+                        }       
+                        array_push($data['y-axis'][$line], $row[$dp]);
+                    }       
+                }       
+            }
+        }
+
+
+        return $data;
+
+    }
+    public function regression_history_chart()
+    {
+        $data['x-axis'] = array();
+        $data['y-axis'] = array();
+        $data['line-names'] = array();
+        $data['datapoint-names'] = array();
+
+        # line names are going to be compoent names, author names etc.. drawn from the query
+        # we don't want to have to work through the query multiple times to get it either.
+        # Specify the lines to be charted
+        # Defaults to the basic set of branches
+
+        # Determine the data points to be charted
+        if (isset($this->query->options['datapoints'])) {
+            if (is_array(($this->query->options['datapoints']))) {
+                foreach ($this->query->options['datapoints'] as $item) {
+                    array_push($data['datapoint-names'], $item);
+                }
+            } else {
+                array_push($data['datapoint-names'],$this->query->options['datapoints']);
+            }
+        } else {
+            $data['datapoint-names'] = array('regression_count');
+        }
+        $departments = array();
+        foreach ( $this->query->data as $row) {
+            array_push($departments, $row[$this->query->options['y_axis_field'][0]]);
+        }
+        $data['line-names'] = array_unique($departments, SORT_REGULAR);
+        echo "<BR/>";
+
+        foreach ( $this->query->data as $row) {
+            array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
+            foreach ( $data['line-names'] as $ln) {
+                # Only add data point to the line if the release name contains the line name root
+                if ( strripos($row[$this->query->options['y_axis_field'][0]],$ln) !== FALSE ) {
+                    foreach ( $data['datapoint-names'] as $dp ) { 
+                        $line = $ln . '_' . $dp;
+                        if (! array_key_exists($line,$data['y-axis'] )) {
+                            $data['y-axis'][$line] = array();
+                        }       
+                        array_push($data['y-axis'][$line], $row[$dp]);
+                    }       
+                }       
+            }
+        }
+
+
+        return $data;
+
+    }
 }
 
 
