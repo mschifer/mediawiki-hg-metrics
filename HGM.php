@@ -178,7 +178,7 @@ $wgHGMSQLChurn    = "SELECT metrics_files.file_name, metrics_files.file_id, metr
                     "metrics_summary.percent_change, metrics_releases.release_name, metrics_summary.bugs, " .  
                     "metrics_summary.backout_count, metrics_summary.committers, metrics_summary.reviewers, " .
                     "metrics_summary.approvers, metrics_summary.msgs, metrics_summary.total_commits, " .
-                    ""metrics_summary.regression_count,  metrics_summary.bug_count " .
+                    "metrics_summary.regression_count,  metrics_summary.bug_count " .
                     "FROM metrics_files, metrics_summary, metrics_releases " .
                     "WHERE metrics_releases.release_id = metrics_summary.release_id "  .
                     "AND metrics_files.file_id = metrics_summary.file_id " .
@@ -191,20 +191,16 @@ $wgChurnWhere2    = "AND metrics_releases.release_id = " .
 
 $wgHGMSQLChurnOrder = "ORDER BY metrics_summary.release_id,metrics_summary.percent_change DESC LIMIT 10000; " ;
 
-$wgHGMSQLHistory    = "SELECT mr.release_number, mr.release_name, mb.bug_count, mb.regression_count, mb.bug_fixed, mb.regression_fixed, mb.backout_count " .
-                    "FROM metrics_bug_stats mb, metrics_releases mr " .
-                    "WHERE mb.release_id = mr.release_id AND mr.release_number > 23 " .
-                    "ORDER BY mr.release_number";
 
 $wgHGMSQLBugHistory = array();
 
 $wgHGMSQLBugHistory['release_history'] = "SELECT mr.release_number, mr.release_name, " .
                     "mb.bug_count, mb.regression_count, " .
-                    "mb.bug_fixed, mb.regression_fixed, mb.backout_count " .
-                    "FROM metrics_bug_stats mb, metrics_releases mr " .
+                    "mb.bugs_fixed, mb.regressions_fixed, mb.backout_count " .
+                    "FROM metrics_bug_stats_view mb, metrics_releases mr " .
                     "WHERE mb.release_id = mr.release_id " .
-                    "AND mr.release_number > 23 "
-                    "ORDER BY mr.release_number LIMIT 100";
+                    "AND mr.release_number > 23 " ;
+#                    "ORDER BY mr.release_number LIMIT 100";
 
 $wgHGMSQLBugHistory['detail_history'] = "SELECT count(mb.bug) bug_count, " . 
                     "SUM(is_regression) regression_count, mb.release_id, " .
@@ -218,7 +214,7 @@ $wgHGMSQLBugHistory['detail_history'] = "SELECT count(mb.bug) bug_count, " .
 
 $wgHGMSQLBugHistory['team_regression_history'] = "SELECT manager, department, lines_changed, regressions, " . 
                     "release_number, ROUND((regressions/lines_changed),3) AS regression_rate, " .
-                    "ROUND((backouts/lines_changed),3) AS backout_rate " .
+                    "backouts, ROUND((backouts/lines_changed),3) AS backout_rate " .
                     "FROM metrics_team_regression_rate_view " .
                     "WHERE regression_rate > 0 ";
 
