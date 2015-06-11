@@ -257,15 +257,7 @@ class HGMSQLQuery extends HGMBaseQuery {
                 $stmt->bindParam(":min_change", $wgHGMMin_Value, PDO::PARAM_INT);
             }
         }
-        echo "moo<br/>";
-        echo "moo<br/>";
-        echo "moo<br/>";
-        echo "moo<br/>";
-        echo "moo<br/>";
-        echo "moo<br/>";
-        echo "moo<br/>";
-        echo "moo<br/>";
-        echo $this->sql;
+        #echo $this->sql;
         $stmt->execute();
         $this->data = $stmt->fetchAll(PDO::FETCH_ASSOC) ;
         return;
