@@ -146,9 +146,9 @@ abstract class HGMBaseQuery {
         }
 
         // Default Values
-        $wgHGMLatest = false;
-        $wgOrderBy   = 'ORDER BY regression_rate DESC';
-        $wgGroupBy   = '';
+        $wgHGMLatest  = false;
+        $wgGroupBy    = '';
+        $wgReportType = 'churn';
         foreach( $this->options as $key => $value ) {
             switch ($key) {
                 case 'release':
@@ -171,6 +171,21 @@ abstract class HGMBaseQuery {
                    break;
             }
         }
+
+        switch( $this->type ) {
+            case 'history':
+                switch ($wgReportType) {
+                    case 'time_to_fix_by_release':
+                        $wgOrderBy   = '';
+                        break;
+                    default:
+                        $wgOrderBy   = 'ORDER BY regression_rate DESC';
+                        break;
+                }
+            default:
+                $wgOrderBy   = '';
+        }
+
 
 
     }

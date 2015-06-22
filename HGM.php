@@ -222,6 +222,15 @@ $wgHGMSQLBugHistory['file_regression_history'] = "SELECT file_name, lines_change
                     "backouts, ROUND((backouts/lines_changed),3) AS backout_rate, " .
                     "ROUND((regressions/lines_changed),3) AS regression_rate " .
                     "FROM metrics_file_regression_rate_view WHERE regression_rate > 0 ";
+$wgHGMSQLBugHistory['time_to_fix_bugs'] = "SELECT time_to_fix, count(*) AS bugs_fixed FROM " .
+                    "metrics_bugs_time_to_fix_view GROUP BY time_to_fix ORDER BY time_to_fix ASC";
+
+
+$wgHGMSQLBugHistory['time_to_fix_by_release'] = "SELECT mr.release_number, mr.release_name, " . 
+                    "mr.release_id, mbv.time_to_fix, mbv.bug, mbv.is_regression FROM metrics_releases mr " .
+                    "LEFT JOIN metrics_bugs_time_to_fix_view mbv ON mbv.release_id = mr.release_id " .
+                    "GROUP BY mr.release_id, mbv.time_to_fix ORDER BY mr.release_number";
+
 
 $wgHGMRelease   = "%";
 $wgHGMMin_Value = 0;
@@ -261,7 +270,6 @@ $wgHGMDefaultFields['churn'] = array(
     'msgs'
 );
 
-#$wgHGMDefaultFieldsHistory = array(
 $wgHGMDefaultFields['release_history'] = array(
     "release_number",
     "release_name",
@@ -298,6 +306,24 @@ $wgHGMDefaultFields['file_regression_history'] = array(
     "backout_rate",
     "regressions",
     "regression_rate",
+);
+
+$wgHGMDefaultFields['time_to_fix_bugs'] = array(
+    "time_to_fix", 
+    "bugs_fixed"
+);
+#    "product",
+#    "component",
+#    "is_regression",
+#    "release_id",
+
+$wgHGMDefaultFields['time_to_fix_by_release'] = array(
+    "release_number",
+    "release_name",
+    "release_id",
+    "bug",
+    "time_to_fix",
+    "is_regression"
 );
 
 $wgHGMTable = array(

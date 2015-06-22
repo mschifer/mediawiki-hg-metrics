@@ -71,7 +71,6 @@ abstract class HGMOutput {
             return $this->_render_error($this->error);
         }
         $this->setup_template_data();
-
         $response = $this->response;
         ob_start(); // Start output buffering.
         require($this->template);
@@ -133,6 +132,7 @@ class HGMBugListing extends HGMOutput {
             // default fields
             $this->response->fields = $wgHGMDefaultFields[$wgReportType];
         }
+       
     }
 
 }
@@ -383,6 +383,12 @@ class HGMLineGraph extends HGMGraph {
             case 'team_regression_history':
                 $data = $this->regression_history_chart();
                 break;
+            case 'time_to_fix_bugs':
+                $data = $this->time_to_fix_bugs_chart();
+                break;
+            case 'time_to_fix_by_release':
+                $data = $this->time_to_fix_by_release_chart();
+                break;
             case 'release_history':
             default:
                 $data = $this->release_history_chart();
@@ -407,9 +413,9 @@ class HGMLineGraph extends HGMGraph {
         }
 
         # X Axis Lables
-        $pData->addPoints($releases,"Releases");
-        $pData->setSerieDescription("Releases","Releases");
-        $pData->setAbscissa("Releases");
+        $pData->addPoints($releases,$data['x-lable']);
+        $pData->setSerieDescription($data['x-lable'],$data['x-lable']);
+        $pData->setAbscissa($data['x-lable']);
 
         /* Create the pChart object */
         $l1 = 300;
@@ -482,6 +488,7 @@ class HGMLineGraph extends HGMGraph {
         $data['y-axis'] = array();
         $data['line-names'] = array();
         $data['datapoint-names'] = array();
+        $data['x-lable'] = 'Releases';
 
         # Specify the lines to be charted
         # Defaults to the basic set of branches
@@ -535,6 +542,7 @@ class HGMLineGraph extends HGMGraph {
         $data['y-axis'] = array();
         $data['line-names'] = array();
         $data['datapoint-names'] = array();
+        $data['x-lable'] = 'Releases';
 
         # line names are going to be compoent names, author names etc.. drawn from the query
         # we don't want to have to work through the query multiple times to get it either.
@@ -558,7 +566,6 @@ class HGMLineGraph extends HGMGraph {
             array_push($components, $row[$this->query->options['y_axis_field'][0]]);
         }
         $data['line-names'] = array_unique($components, SORT_REGULAR);
-        echo "<BR/>";
 
         foreach ( $this->query->data as $row) {
             array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
@@ -586,7 +593,8 @@ class HGMLineGraph extends HGMGraph {
         $data['y-axis'] = array();
         $data['line-names'] = array();
         $data['datapoint-names'] = array();
-
+        $data['x-lable'] = 'Releases';
+  
         # line names are going to be compoent names, author names etc.. drawn from the query
         # we don't want to have to work through the query multiple times to get it either.
         # Specify the lines to be charted
@@ -609,7 +617,6 @@ class HGMLineGraph extends HGMGraph {
             array_push($departments, $row[$this->query->options['y_axis_field'][0]]);
         }
         $data['line-names'] = array_unique($departments, SORT_REGULAR);
-        echo "<BR/>";
 
         foreach ( $this->query->data as $row) {
             array_push($data['x-axis'], $row[$this->query->options['x_axis_field']]);
@@ -631,6 +638,78 @@ class HGMLineGraph extends HGMGraph {
         return $data;
 
     }
+
+    public function time_to_fix_bugs_chart()
+    {
+        $data['x-axis'] = array();
+        $data['y-axis'] = array();
+        $data['y-axis']['days'] = array();
+        $data['line-names'] = array();
+        $data['datapoint-names'] = array();
+        $data['x-lable'] = 'Days To Fix';
+
+
+        $year = 0;
+        foreach ( $this->query->data as $row) {
+            if ( ((int) $data['y-axis']) < 30) {
+                array_push($data['x-axis'], (int) $row[$this->query->options['x_axis_field']]);
+                array_push($data['y-axis']['days'], (int) $row[$this->query->options['y_axis_field'][0]]);
+            } else {
+              $year += 1;
+            }
+        }
+
+        array_push($data['x-axis'], 370);
+        array_push($data['y-axis'], $year);
+
+        return $data;
+
+    }
+
+public function time_to_fix_by_release_chart()
+    {
+        $data['x-axis'] = array();
+        $data['y-axis'] = array();
+        $data['y-axis']['All Bugs: days to fix'] = array();
+        $data['y-axis']['Regressions: days to fix'] = array();
+        $data['line-names'] = array();
+        $data['datapoint-names'] = array();
+        $data['x-lable'] = 'Release';
+
+        $release_counts = array();
+        $release_counts = array();
+        foreach ( $this->query->data as $row) {
+            # Y is time to fix
+            # X is release number
+            # need to calc average time to fix.
+
+            $release_number =  $row[$this->query->options['x_axis_field'][0]];
+            if ( $release_number < 24 ) {
+                continue;
+            }
+            if (! array_key_exists( $release_number,$release_counts )) {
+                $release_counts[$release_number] = array('bugs', 'days to fix');
+                $release_counts[$release_number]['bugs'] = 0;
+                $release_counts[$release_number]['days to fix'] = 0;
+
+                $regression_counts[$release_number] = array('bugs', 'days to fix');
+                $regression_counts[$release_number]['bugs'] = 0;
+                $regression_counts[$release_number]['days to fix'] = 0;
+            }
+            $release_counts[$release_number]['bugs'] += 1;
+            $release_counts[$release_number]['days to fix'] += (int) $row[$this->query->options['y_axis_field']];
+            if ( (int) $row['is_regression'] > 0 ) {
+                $regression_counts[$release_number]['bugs'] += 1;
+                $regression_counts[$release_number]['days to fix'] += (int) $row[$this->query->options['y_axis_field']];
+            }
+        }
+
+        foreach ( array_keys($release_counts) as $rel_number ) {
+            array_push($data['x-axis'], $rel_number);
+            array_push($data['y-axis']['All Bugs: days to fix'], ($release_counts[$rel_number]['days to fix']/ $release_counts[$rel_number]['bugs']));
+            array_push($data['y-axis']['Regressions: days to fix'], ($release_counts[$rel_number]['days to fix']/ $release_counts[$rel_number]['bugs']));
+        }
+
+        return $data;
+    }
 }
-
-
