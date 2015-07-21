@@ -171,6 +171,7 @@ function HGMRender($input, array $args, Parser $parser, $frame=null ) {
 
 // Remote API
 $wgBugzillaURL    = 'https://bugzilla.mozilla.org'; // The URL for your Bugzilla installation
+$wgHGMDatabaseType= 'mysql'; // Valid types are 'mysql' and 'sqlite'
 
 $wgHGMTagName     = 'hgm'; // The tag name for your HGM installation (default: 'hgm')
 
@@ -185,9 +186,15 @@ $wgHGMSQLChurn    = "SELECT metrics_files.file_name, metrics_files.file_id, metr
                     "AND metrics_summary.percent_change > (metrics_files.mean + metrics_files.stdev + :min_change) ";
                        
 $wgChurnWhere1    = "AND metrics_releases.release_name LIKE :release_name " ;
+if ($wgHGMDatabaseType == 'mysql')  {
+$wgChurnWhere2    = "AND metrics_releases.release_id = " .
+                    "(SELECT release_id FROM metrics_releases WHERE release_name LIKE :release_name1 AND release_number = " .
+                    "(SELECT max(release_number) FROM metrics_release_master_view WHERE release_name LIKE :release_name2 AND start_date <= CURDATE()))";
+} else {
 $wgChurnWhere2    = "AND metrics_releases.release_id = " .
                     "(SELECT release_id FROM metrics_releases WHERE release_name LIKE :release_name1 AND release_number = " .
                     "(SELECT max(release_number) FROM metrics_release_master_view WHERE release_name LIKE :release_name2 AND start_date <= DATE()))";
+}
 
 $wgHGMSQLChurnOrder = "ORDER BY metrics_summary.release_id,metrics_summary.percent_change DESC LIMIT 10000; " ;
 
@@ -216,12 +223,13 @@ $wgHGMSQLBugHistory['team_regression_history'] = "SELECT manager, department, li
                     "release_number, ROUND((regressions/lines_changed),3) AS regression_rate, " .
                     "backouts, ROUND((backouts/lines_changed),3) AS backout_rate " .
                     "FROM metrics_team_regression_rate_view " .
-                    "WHERE regression_rate > 0 ";
+                    "WHERE ROUND((regressions/lines_changed),3) > 0 ";
+#                    "WHERE regression_rate > 0 ";
 
 $wgHGMSQLBugHistory['file_regression_history'] = "SELECT file_name, lines_changed, regressions, " .
                     "backouts, ROUND((backouts/lines_changed),3) AS backout_rate, " .
                     "ROUND((regressions/lines_changed),3) AS regression_rate " .
-                    "FROM metrics_file_regression_rate_view WHERE regression_rate > 0 ";
+                    "FROM metrics_file_regression_rate_view WHERE ROUND((regressions/lines_changed),3) > 0 ";
 $wgHGMSQLBugHistory['time_to_fix_bugs'] = "SELECT time_to_fix, count(*) AS bugs_fixed FROM " .
                     "metrics_bugs_time_to_fix_view GROUP BY time_to_fix ORDER BY time_to_fix ASC";
 
@@ -239,7 +247,7 @@ $wgHGMMin_Value = 0;
 // NOTE: $wgHGMUseCache has been removed. Use $wgHGMCacheType below only:
 // - any valid value for using it
 // - equivalent to previous $wgHGMUseCache = false; is $wgHGMCacheType = 'dummy';
-$wgHGMCacheType = 'mysql'; // valid values are: memcache, apc, mysql, postgresql, sqlite, dummy.
+$wgHGMCacheType = '`mysql'; // valid values are: memcache, apc, mysql, postgresql, sqlite, dummy.
 $wgHGMCacheMins = 1; // Minutes to cache results (default: 5)
 
 $wgHGMJqueryTable = true; // Use a jQuery table for display (default: true)

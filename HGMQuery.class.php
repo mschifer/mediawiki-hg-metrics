@@ -248,10 +248,26 @@ class HGMSQLQuery extends HGMBaseQuery {
         global $dbh;
         global $wgHGMRelease;
         global $wgHGMMin_Value;
-        global  $wgHGMLatest;
+        global $wgHGMLatest;
+        global $wgHGMDatabaseType;
 
-        $dbfile = __DIR__ . '/churndb.sql';
-        $dbh = new PDO('sqlite:' . $dbfile );
+        switch ($wgHGMDatabaseType) {
+            case 'sqlite':
+                $dbfile = __DIR__ . '/churndb.sql';
+                $dbh = new PDO('sqlite:' . $dbfile );
+                break;
+            case 'mysql':
+                try {
+                    $dbh = new PDO('mysql:host=127.0.0.1;port=8889;dbname=churndb;','root','root');
+                } catch (PDOException $e) {
+                    die($e->getMessage());
+                }
+                break;
+            default:
+                $this->error = "No Database Configured:";
+            return;
+        }
+   
         $data = array();
         $maxrows = 10;
         $rowcnt = 0;
